@@ -22,22 +22,22 @@ Mô phỏng và phân tích dấu hiệu tấn công từ chối dịch vụ (Do
 C:\LAB3
 ├── Assets/ (hoặc lab3_assets/)
 │   ├── data/
-│   │   ├── ddos_sample.csv           # Dữ liệu phân tích lưu lượng DDoS
-│   │   └── mailbomb_sample.csv       # Dữ liệu phân tích log Mail Bombing
+│   │   ├── ddos_sample.csv          
+│   │   └── mailbomb_sample.csv       
 │   ├── samples/
-│   │   ├── eicar.com.txt             # Chuỗi thử nghiệm mã độc EICAR
-│   │   ├── phishing_email.txt        # Mẫu email lừa đảo trích xuất header
+│   │   ├── eicar.com.txt            
+│   │   ├── phishing_email.txt        
 │   │   └── social_engineering_cases.csv
 │   ├── scripts/
-│   │   └── local_load_test.py        # Kịch bản phát tải DoS cục bộ tới port 8080
-│   ├── sysmon-lab.xml                # Tệp cấu hình quy tắc Sysmon
-│   └── www/                          # Thư mục chứa tài nguyên web phục vụ HTTP Server
-├── Downloads/                        # Chứa gói nén LAB3_Threats_Assets.zip
-├── Evidence/                         # Chứa toàn bộ tệp nhật ký (.txt) và ảnh chụp minh chứng (.png)
+│   │   └── local_load_test.py        
+│   ├── sysmon-lab.xml                
+│   └── www/                          
+├── Downloads/                        
+├── Evidence/                         
 └── Tools/
-    ├── ProcessExplorer/              # Bộ công cụ Process Explorer (procexp64.exe)
-    ├── SysinternalsSuite/            # Bộ công cụ Sysinternals
-    └── Sysmon/                       # Sysmon64.exe
+    ├── ProcessExplorer/              
+    ├── SysinternalsSuite/            
+    └── Sysmon/                      
 3. Các kịch bản & Tình huống thực hiện
 Tình huống 1 (TH1): Thiết lập môi trường & Lấy baseline
 Tạo cấu trúc cây thư mục chuẩn tại C:\LAB3.
