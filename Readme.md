@@ -1,111 +1,43 @@
 Lý Gia Vinh
 1150080041
-# LAB 3: IDENTIFYING AND RESPONDING TO INFORMATION SECURITY THREATS
+ LAB 4: KHẢO SÁT CỔNG VÀ ĐÁNH GIÁ AN TOÀN HỆ THỐNG (HARDENING)
 
-Học phần: An toàn và Bảo mật Thông tin  
-Môi trường thực hành: Máy ảo Windows 11 25H2 (Build 26200.9445) trên VMware Workstation Pro  
-Chế độ mạng: Host-only (chuyển tạm NAT khi thử nghiệm bắt gói HTTPS)
-
-1. Mục tiêu bài thực hành
-Nhận diện, phân tích các mối đe dọa an toàn thông tin phổ biến trên hệ điều hành Windows.
-Cấu hình và thu thập nhật ký bảo mật hệ thống (Security Audit Policy, Sysmon, Event Viewer).
-Kiểm tra mã độc mẫu (EICAR), phân tích xác thực và xâm nhập tài khoản cục bộ.
-Phân tích và phát hiện cơ chế duy trì xâm nhập (Persistence Mechanisms) bằng Sysinternals Autoruns & Process Explorer.
-Giám sát, phân tích lưu lượng mạng mã hóa (TLS/HTTPS) và không mã hóa (HTTP) bằng Wireshark.
-Mô phỏng và phân tích dấu hiệu tấn công từ chối dịch vụ (DoS/DDoS), Mail Bombing và Social Engineering/Phishing.
+Môi trường thực hành:** Windows 11 VM (VMware Workstation Pro)
+Công cụ chính:** Nmap, Npcap, Windows Defender Firewall, PowerShell (Admin)
+Mục tiêu:** Rà soát cổng dịch vụ (TCP/UDP), phân tích phản ứng giao thức mạng và đánh giá hiệu quả phòng thủ trước/sau khi Hardening.
 
 
 
-2. Cấu trúc thư mục Lab (`C:\LAB3`)
+1. Các nội dung đã thực hiện
 
-```text
-C:\LAB3
-├── Assets/ (hoặc lab3_assets/)
-│   ├── data/
-│   │   ├── ddos_sample.csv          
-│   │   └── mailbomb_sample.csv       
-│   ├── samples/
-│   │   ├── eicar.com.txt            
-│   │   ├── phishing_email.txt        
-│   │   └── social_engineering_cases.csv
-│   ├── scripts/
-│   │   └── local_load_test.py        
-│   ├── sysmon-lab.xml                
-│   └── www/                          
-├── Downloads/                        
-├── Evidence/                         
-└── Tools/
-    ├── ProcessExplorer/              
-    ├── SysinternalsSuite/            
-    └── Sysmon/                      
-3. Các kịch bản & Tình huống thực hiện
-Tình huống 1 (TH1): Thiết lập môi trường & Lấy baseline
-Tạo cấu trúc cây thư mục chuẩn tại C:\LAB3.
+Mục 5 & 6: Khảo sát cổng TCP & UDP (Localhost / Loopback)
+TCP Connect (`-sT`):** Hoàn tất bắt tay 3 bước, xác định các cổng mở (`135`, `445`, `8080`).
+TCP SYN Scan (`-sS`):** Quét Half-open (gửi SYN, nhận SYN/ACK, hủy bằng RST). Yêu cầu quyền Admin để gửi raw packet.
+Inverse Scan (FIN `-sF` / Xmas `-sX`):** Kiểm chứng phản ứng theo RFC 793. Trên Windows, các cổng đều phản hồi `RST` $\rightarrow$ Nmap báo `closed`.
+UDP Scan (`-sU`):** Quét cổng UDP phổ biến, ghi nhận cơ chế không hướng kết nối và trạng thái `open|filtered`.
 
-Ghi nhận mốc thời gian bắt đầu (Evidence\start_time.txt).
+Mục 8 & 9: Nhận diện Dịch vụ, Hệ điều hành & NSE Script
+Service Version (`-sV`):** Nhận diện chính xác dịch vụ và phiên bản phần mềm (Python SimpleHTTP cổng `8080`, RPC/SMB cổng `135`/`445`).
+OS Fingerprinting (`-O` / `-A`):** Phân tích TCP/IP stack để suy đoán nhân hệ điều hành Windows.
+NSE SMB Discovery:** Dùng script `smb-os-discovery` và `smb2-security-mode` kiểm tra thông tin máy và chính sách ký gói tin SMB cổng `445`.
 
-Thu thập baseline hệ thống: Thông tin OS, trạng thái Windows Defender, Windows Firewall, danh sách tiến trình và dịch vụ mạng ban đầu.
+Mục 11: Thực nghiệm Phòng thủ (Before & After Hardening)
+Before:** Quét cổng `8080` (HTTP Server) $\rightarrow$ trạng thái `open`.
+Hành động Hardening:** Tạo Inbound Rule trên Windows Defender Firewall chặn cổng `8080`.
+After:** Quét lại cổng `8080` $\rightarrow$ trạng thái chuyển từ `open` sang `filtered`.
+Kết luận:** Chứng minh việc siết chặt chính sách tường lửa đã loại bỏ bề mặt tấn công của dịch vụ không cần thiết.
 
-Tình huống 2 (TH2): Phát hiện mã độc (Malware Detection)
-Thử nghiệm chuỗi mẫu EICAR (eicar.com.txt).
 
-Kích hoạt cơ chế phát hiện của Windows Defender / Antivirus.
 
-Thu thập nhật ký xử lý mối đe dọa của Defender.
+2. Danh mục tệp minh chứng (Evidence)
 
-Tình huống 3 (TH3): Phân tích xác thực & Nhật ký bảo mật (Authentication Logging)
-Tạo tài khoản người dùng cục bộ kiểm thử: lab3user.
-
-Bật chính sách kiểm toán đăng nhập:
-
-auditpol /set /category:"Logon/Logoff" /subcategory:"Logon" /success:enable /failure:enable
-
-Mô phỏng hành vi đăng nhập sai thông tin qua runas /user:.\lab3user cmd.exe.
-
-Lọc và trích xuất sự kiện trong Security Log:
-
-Event ID 4624: Đăng nhập thành công.
-
-Event ID 4625: Đăng nhập thất bại (Audit Failure).
-
-Event ID 4648: Đăng nhập bằng thông tin xác thực tường minh.
-
-Đổi mật khẩu tài khoản và kiểm chứng lại quyền truy cập.
-
-Tình huống 4 (TH4): Cài đặt Sysmon & Phát hiện duy trì xâm nhập (Persistence)
-Cài đặt dịch vụ giám sát hệ thống Sysmon kèm file cấu hình:
-
-Sysmon64.exe -accepteula -i C:\LAB3\lab3_assets\sysmon-lab.xml
-
-Kiểm tra nhánh ghi nhật ký: Applications and Services Logs > Microsoft > Windows > Sysmon > Operational (Event ID 1: Process Creation).
-
-Thiết lập cơ chế duy trì quyền truy cập (Persistence):
-
-Khóa Registry Run: HKCU\...\CurrentVersion\Run / HKLM\...\CurrentVersion\Run mang tên LAB3_Run_Demo trỏ tới notepad.exe.
-
-Tác vụ lịch trình: Scheduled Task LAB3_Persistence_Demo.
-
-Dùng công cụ Autoruns để phát hiện các mục khởi động bất thường.
-
-Khởi chạy dịch vụ web nội bộ (python -m http.server 8080 --bind 127.0.0.1) và dùng Process Explorer để định danh tiến trình, số PID và kiểm tra tính hợp lệ của dịch vụ.
-
-Tình huống 5 (TH5): Bắt và so sánh lưu lượng HTTP vs HTTPS
-Bắt gói tin trên giao diện Loopback (Adapter for loopback traffic capture) bằng Wireshark.
-
-Gửi yêu cầu HTTP không mã hóa chứa tham số nhạy cảm (TRAINING_ONLY) -> Đọc được dữ liệu bản rõ (Plaintext) tại Layer 7.
-
-Chuyển mạng sang NAT, bắt gói trên card Ethernet với giao thức mã hóa HTTPS (https://example.com/).
-
-So sánh tính bảo mật: HTTPS bảo vệ dữ liệu bằng TLS (Application Data mã hóa), chống nghe lén thông tin. Trả máy ảo về lại card mạng Host-only.
-
-Tình huống 6 (TH6): Phân tích DoS, DDoS & Mail Bombing
-Chạy script mô phỏng quá trình tạo tải DoS cục bộ: local_load_test.py nhắm vào 127.0.0.1:8080.
-
-Phân tích tệp log tấn công phân tán ddos_sample.csv qua PowerShell: Nhóm tần suất theo IP nguồn (SourceIP) để nhận diện mạng botnet.
-
-Phân tích nhật ký thư rác mailbomb_sample.csv: Thống kê số lượng thư bất thường từ bulk-sender@example.invalid và tổng dung lượng thư gửi đến (SizeBytes).
-
-Tình huống 7 (TH7): Phân tích Social Engineering & Phishing
-Đọc nội dung email mẫu phishing_email.txt, phân tích các chỉ số giả mạo (Sender Header, Display Name, URL chuyển hướng, lời kêu gọi khẩn cấp).
-
-Đánh giá bảng kịch bản tấn công xã hội trong social_engineering_cases.csv và đưa ra khuyến nghị phòng ngừa.
+| Tên tệp | Mô tả nội dung |
+| :--- | :--- |
+| `H4_TCP_SYN_Scan.png` | Kết quả quét TCP SYN (`-sS`) hiển thị danh sách cổng mở |
+| `H5_Service_Version.png` | Kết quả nhận diện phiên bản dịch vụ (`-sV`) |
+| `H6_OS_Detection.png` | Kết quả suy đoán hệ điều hành Windows (`-O`) |
+| `H7_NSE_SMB_Script.png` | Output chạy script NSE thu thập thông tin SMB |
+| `H8_Hardening_Before.png` | Trạng thái cổng 8080 mở (`open`) trước khi cấu hình firewall |
+| `H8_Hardening_After.png` | Trạng thái cổng 8080 bị lọc (`filtered`) sau khi áp rule chặn |
+| `scan_result.txt` / `.xml` | Tệp xuất log toàn bộ phiên quét bằng Nmap |
+| `evidence_sha256.csv` | Bảng mã băm SHA-256 bảo đảm tính toàn vẹn của minh chứng |
